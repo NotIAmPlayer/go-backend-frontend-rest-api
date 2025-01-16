@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -11,28 +10,28 @@ import (
 )
 
 type Staff struct {
-	staffID    int    `json:"staff_id" db:"Staff_ID"`
-	fullName   string `json:"full_name" db:"Full_Name"`
-	email      string `json:"email" db:"Email"`
-	positionID int    `json:"position_id" db:"Position_ID"`
+	StaffID    int    `json:"staff_id"`
+	FullName   string `json:"full_name"`
+	Email      string `json:"email"`
+	PositionID int    `json:"position_id"`
 }
 
 type Location struct {
-	locationID   int    `json:"location_id"`
-	locationName string `json:"location_name"`
-	address      string `json:"address"`
-	floor        string `json:"floor"`
+	LocationID   int    `json:"location_id"`
+	LocationName string `json:"location_name"`
+	Address      string `json:"address"`
+	Floor        string `json:"floor"`
 }
 
 type Meeting struct {
-	meetingID   int    `json:"meeting_id"`
-	locationID  int    `json:"location_id"`
-	title       string `json:"title"`
-	description string `json:"description"`
-	meetingDate string `json:"meeting_date"`
-	startTime   string `json:"start_time"`
-	endTime     string `json:"end_time"`
-	meetingType string `json:"meeting_type"`
+	MeetingID   int    `json:"meeting_id"`
+	LocationID  int    `json:"location_id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	MeetingDate string `json:"meeting_date"`
+	StartTime   string `json:"start_time"`
+	EndTime     string `json:"end_time"`
+	MeetingType string `json:"meeting_type"`
 }
 
 var db *sql.DB
@@ -75,7 +74,7 @@ func getMeetings(c *gin.Context) {
 	for rows.Next() {
 		var m Meeting
 
-		if err := rows.Scan(&m.meetingID, &m.locationID, &m.title, &m.description, &m.meetingDate, &m.startTime, &m.endTime, &m.meetingType); err != nil {
+		if err := rows.Scan(&m.MeetingID, &m.LocationID, &m.Title, &m.Description, &m.MeetingDate, &m.StartTime, &m.EndTime, &m.MeetingType); err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 		}
 
@@ -94,13 +93,13 @@ func putMeeting(c *gin.Context) {}
 func deleteMeeting(c *gin.Context) {}
 
 func getStaff(c *gin.Context) {
-	var staffs []Staff
+	staffs := []Staff{}
 	var query = "SELECT Staff_ID, Full_Name, Email, Position_ID FROM Staff"
 
 	rows, err := db.Query(query)
 
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 	}
 
 	defer rows.Close()
@@ -108,43 +107,59 @@ func getStaff(c *gin.Context) {
 	for rows.Next() {
 		var s Staff
 
-		if err := rows.Scan(&s.staffID, &s.fullName, &s.email, &s.positionID); err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		if err := rows.Scan(&s.StaffID, &s.FullName, &s.Email, &s.PositionID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 			return
 		}
 
-		fmt.Println(s)
 		staffs = append(staffs, s)
 	}
 
 	if err := rows.Err(); err != nil {
 		log.Println("Error iterating over rows:", err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, staffs)
+	if len(staffs) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "staffs table is empty"})
+	} else {
+		c.JSON(http.StatusOK, staffs)
+	}
 }
 
 func getLocation(c *gin.Context) {
-	var locations []Location
+	locations := []Location{}
 	var query = "SELECT Location_ID, Location_Name, Address, Floor FROM Location"
 
 	rows, err := db.Query(query)
 
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var l Location
 
-		if err := rows.Scan(&l.locationID, &l.locationName, &l.address, &l.floor); err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		if err := rows.Scan(&l.LocationID, &l.LocationName, &l.Address, &l.Floor); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+			return
 		}
 
 		locations = append(locations, l)
 	}
 
-	c.JSON(http.StatusOK, locations)
+	if err := rows.Err(); err != nil {
+		log.Println("Error iterating over rows:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		return
+	}
+
+	if len(locations) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "staffs table is empty"})
+	} else {
+		c.JSON(http.StatusOK, locations)
+	}
 }
