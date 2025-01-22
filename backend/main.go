@@ -71,6 +71,8 @@ func getMeetings(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 	}
 
+	defer rows.Close()
+
 	for rows.Next() {
 		var m Meeting
 
@@ -84,13 +86,71 @@ func getMeetings(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, meetings)
 }
 
-func getMeetingByID(c *gin.Context) {}
+func getMeetingByID(c *gin.Context) {
+	id := c.Param("id")
 
-func postMeeting(c *gin.Context) {}
+	var query = "SELECT Meeting_ID, Location_ID, Title, Description, Meeting_Date, Start_Time, End_Time, Meeting_Type FROM Meeting WHERE Meeting_ID = ?"
 
-func putMeeting(c *gin.Context) {}
+	res, err := db.Query(query, id)
 
-func deleteMeeting(c *gin.Context) {}
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	}
+
+	defer res.Close()
+
+	if res.Next() {
+		var m Meeting
+
+		if err := res.Scan(&m.MeetingID, &m.LocationID, &m.Title, &m.Description, &m.MeetingDate, &m.StartTime, &m.EndTime, &m.MeetingType); err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		}
+
+		c.IndentedJSON(http.StatusOK, m)
+	} else {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "meeting not found"})
+	}
+}
+
+func postMeeting(c *gin.Context) {
+	var newMeeting Meeting
+
+	if err := c.BindJSON(&newMeeting); err != nil {
+		return
+	}
+
+	var query = "INSERT INTO meeting (Location_ID, Title, Description, Meeting_Date, Start_Time, End_Time, Meeting_Type) VALUES (?, ?, ?, ?, ?, ?, ?)"
+
+	ins, err := db.Query(query, newMeeting.LocationID, newMeeting.Title, newMeeting.Description, newMeeting.MeetingDate, newMeeting.StartTime, newMeeting.EndTime, newMeeting.MeetingType)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "meeting creation failed."})
+	} else {
+		c.IndentedJSON(http.StatusCreated, newMeeting)
+	}
+
+	defer ins.Close()
+}
+
+func putMeeting(c *gin.Context) {
+
+}
+
+func deleteMeeting(c *gin.Context) {
+	id := c.Param("id")
+
+	var query = "DELETE FROM meeting WHERE Meeting_ID = ?"
+
+	res, err := db.Query(query, id)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	}
+
+	defer res.Close()
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "meeting " + id + " deleted."})
+}
 
 func getStaff(c *gin.Context) {
 	staffs := []Staff{}
