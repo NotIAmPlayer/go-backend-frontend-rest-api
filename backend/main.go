@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -133,7 +134,93 @@ func postMeeting(c *gin.Context) {
 }
 
 func putMeeting(c *gin.Context) {
+	var updatedMeeting Meeting
+	updatedMeeting.LocationID = -1
 
+	if err := c.BindJSON(&updatedMeeting); err != nil {
+		return
+	}
+
+	updated := 0
+
+	id := c.Param("id")
+
+	var query = "UPDATE meeting SET "
+
+	if updatedMeeting.LocationID != -1 {
+		query += "Location_ID = " + strconv.Itoa(updatedMeeting.LocationID)
+		updated++
+	}
+
+	if updatedMeeting.Title != "" {
+		if updated > 0 {
+			query += ", Title = '" + updatedMeeting.Title + "'"
+		} else {
+			query += "Title = '" + updatedMeeting.Title + "'"
+		}
+
+		updated++
+	}
+
+	if updatedMeeting.Description != "" {
+		if updated > 0 {
+			query += ", Description = '" + updatedMeeting.Description + "'"
+		} else {
+			query += "Description = '" + updatedMeeting.Description + "'"
+		}
+
+		updated++
+	}
+
+	if updatedMeeting.MeetingDate != "" {
+		if updated > 0 {
+			query += ", Meeting_Date = '" + updatedMeeting.MeetingDate + "'"
+		} else {
+			query += "Meeting_Date = '" + updatedMeeting.MeetingDate + "'"
+		}
+
+		updated++
+	}
+
+	if updatedMeeting.StartTime != "" {
+		if updated > 0 {
+			query += ", Start_Time = '" + updatedMeeting.StartTime + "'"
+		} else {
+			query += "Start_Time = '" + updatedMeeting.StartTime + "'"
+		}
+	}
+
+	if updatedMeeting.EndTime != "" {
+		if updated > 0 {
+			query += ", End_Time = '" + updatedMeeting.EndTime + "'"
+		} else {
+			query += "End_Time = '" + updatedMeeting.EndTime + "'"
+		}
+
+		updated++
+	}
+
+	if updatedMeeting.MeetingType != "" {
+		if updated > 0 {
+			query += ", Meeting_Type = '" + updatedMeeting.MeetingType + "'"
+		} else {
+			query += "Meeting_Type = '" + updatedMeeting.MeetingType + "'"
+		}
+
+		updated++
+	}
+
+	query += " WHERE Meeting_ID = " + id
+
+	res, err := db.Query(query)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	}
+
+	defer res.Close()
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "meeting " + id + " updated."})
 }
 
 func deleteMeeting(c *gin.Context) {
