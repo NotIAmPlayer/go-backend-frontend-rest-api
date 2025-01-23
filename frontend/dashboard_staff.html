@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <title>Admin Dashboard</title>
+    <script>
+        let url = "http://localhost:8080";
+
+        fetch(`${url}/api/staff`).then((response) => response.json()).then((data) => {
+            const tableBody = document.getElementById("staff_table").querySelector("tbody");
+
+            tableBody.innerHTML = "";
+
+            data.forEach(element => {
+                console.log(element);
+
+                tableBody.innerHTML += `
+                    <tr>
+                        <td class="py-1 bg-white px-1 border border-black">${element.staff_id}</td>
+                        <td class="py-1 bg-white px-1 border border-black">${element.full_name}</td>
+                        <td class="py-1 bg-white px-1 border border-black">${element.email}</td>
+                        <td class="py-1 bg-white px-1 border border-black">${element.position_id}</td>
+                        <td class="py-1 bg-white px-1 border border-black"></td>
+                    </tr>
+                `;
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="bg-slate-200 min-h-screen h-full flex">
+        <nav class="w-3/12 bg-slate-600 min-h-screen h-fit overflow-none py-8 text-white shadow-2xl shadow-slate-700">
+            <p class="font-bold text-2xl px-6">DASHBOARD</p>
+            <a
+                href="dashboard_meetings.html"
+                class="block py-2 my-2 px-8 border-b border-slate-400
+                font-semibold transition motion-reduce:transition-none ease-out
+                duration-150 hover:text-black hover:bg-amber-400 hover:border-transparent"
+            >
+                Meetings
+            </a>
+            <a
+                href="#"
+                class="block py-2 my-2 px-8 border-b border-transparent bg-white
+                font-semibold transition motion-reduce:transition-none ease-out
+                duration-150 text-black hover:bg-amber-400"
+            >
+                Staff
+            </a>
+            <a
+                href="dashboard_location.html"
+                class="block py-2 my-2 px-8 border-b border-slate-400
+                font-semibold transition motion-reduce:transition-none ease-out
+                duration-150 hover:text-black hover:bg-amber-400 hover:border-transparent"
+            >
+                Locations
+            </a>
+        </nav>
+        <div class="w-9/12 py-8 px-4 h-full min-h-screen">
+            <h1 class="font-bold text-4xl mb-4">Staff Members</h1>
+            <div class="">
+                <table class="w-full" id="staff_table">
+                    <thead>
+                        <tr>
+                            <th class="w-1/12 bg-slate-400 py-1 px-1 border border-black">ID</th>
+                            <th class="w-3/12 bg-slate-400 py-1 px-1 border border-black">Full Name</th>
+                            <th class="w-3/12 bg-slate-400 py-1 px-1 border border-black">Email</th>
+                            <th class="w-3/12 bg-slate-400 py-1 px-1 border border-black">Position</th>
+                            <th class="w-2/12 bg-slate-400 py-1 px-1 border border-black">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
