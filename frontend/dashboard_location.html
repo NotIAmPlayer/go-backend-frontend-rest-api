@@ -5,25 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <title>Admin Dashboard</title>
+    <title>Location | Admin Dashboard</title>
     <script>
-        let url = "http://localhost:8080";
+        const url = "http://localhost:8080";
 
-        fetch(`${url}/api/location`).then((response) => response.json()).then((data) => {
+        fetch(`${url}/api/locations`).then((response) => response.json()).then((data) => {
             const tableBody = document.getElementById("staff_table").querySelector("tbody");
 
             tableBody.innerHTML = "";
 
             data.forEach(element => {
-                console.log(element);
-
                 tableBody.innerHTML += `
                     <tr>
                         <td class="py-1 bg-white px-1 border border-black">${element.location_id}</td>
                         <td class="py-1 bg-white px-1 border border-black">${element.location_name}</td>
                         <td class="py-1 bg-white px-1 border border-black">${element.address}</td>
                         <td class="py-1 bg-white px-1 border border-black">${element.floor}</td>
-                        <td class="py-1 bg-white px-1 border border-black"></td>
+                        <td class="py-1 bg-white px-1 border border-black">
+                            <a href="new_location.html?id=${element.location_id}">
+                                <button
+                                    type="button"
+                                    class="bg-blue-600 hover:bg-blue-800 px-4 py-1
+                                    text-white font-bold rounded-xl"
+                                >
+                                    Edit
+                                </button>
+                            </a>
+                            <a href="delete_location.html?id=${element.location_id}">
+                                <button
+                                    type="button"
+                                    class="bg-red-600 hover:bg-red-800 px-4 py-1
+                                    text-white font-bold rounded-xl"
+                                >
+                                    Delete
+                                </button>
+                            </a>
+                        </td>
                     </tr>
                 `;
             });
@@ -60,8 +77,20 @@
             </a>
         </nav>
         <div class="w-9/12 py-8 px-4 h-full min-h-screen">
-            <h1 class="font-bold text-4xl mb-4">Locations</h1>
-            <div class="">
+            <div class="flex justify-between">
+                <h1 class="font-bold text-4xl mb-4">Locations</h1>
+                <a href="new_location.html">
+                    <button
+                        type="button"
+                        class="bg-blue-600 hover:bg-blue-800 my-2 px-4 py-2
+                        text-white font-bold rounded-xl"
+                    >
+                        Add
+                    </button>
+                </a>
+            </div>
+            
+            <div class="max-h-full">
                 <table class="w-full" id="staff_table">
                     <thead>
                         <tr>

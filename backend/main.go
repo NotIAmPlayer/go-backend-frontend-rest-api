@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -53,7 +54,7 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
-		AllowHeaders:     []string{"Origin"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization", "Cache-Control"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
@@ -64,9 +65,17 @@ func main() {
 	r.PUT("/api/meetings/:id", putMeeting)
 	r.DELETE("/api/meetings/:id", deleteMeeting)
 
-	r.GET("/api/staff", getStaff)
+	r.GET("/api/staffs", getStaffs)
+	r.GET("/api/staffs/:id", getStaffByID)
+	r.POST("/api/staffs", postStaff)
+	r.PUT("/api/staffs/:id", putStaff)
+	r.DELETE("/api/staffs/:id", deleteStaff)
 
-	r.GET("/api/location", getLocation)
+	r.GET("/api/locations", getLocations)
+	r.GET("/api/locations/:id", getLocationByID)
+	r.POST("/api/locations", postLocation)
+	r.PUT("/api/locations/:id", putLocation)
+	r.DELETE("/api/locations/:id", deleteLocation)
 
 	r.Run("localhost:8080")
 }
@@ -225,11 +234,11 @@ func putMeeting(c *gin.Context) {
 
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	} else {
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "meeting " + id + " updated."})
 	}
 
 	defer res.Close()
-
-	c.IndentedJSON(http.StatusOK, gin.H{"message": "meeting " + id + " updated."})
 }
 
 func deleteMeeting(c *gin.Context) {
@@ -248,7 +257,7 @@ func deleteMeeting(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "meeting " + id + " deleted."})
 }
 
-func getStaff(c *gin.Context) {
+func getStaffs(c *gin.Context) {
 	staffs := []Staff{}
 	var query = "SELECT Staff_ID, Full_Name, Email, Position_ID FROM Staff"
 
@@ -284,7 +293,128 @@ func getStaff(c *gin.Context) {
 	}
 }
 
-func getLocation(c *gin.Context) {
+func getStaffByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var query = "SELECT Staff_ID, Full_Name, Email, Position_ID FROM Staff WHERE Staff_ID = ?"
+
+	res, err := db.Query(query, id)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	}
+
+	defer res.Close()
+
+	if res.Next() {
+		var s Staff
+
+		if err := res.Scan(&s.StaffID, &s.FullName, &s.Email, &s.PositionID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+			return
+		}
+
+		c.IndentedJSON(http.StatusOK, s)
+	} else {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "staff not found"})
+	}
+}
+
+func postStaff(c *gin.Context) {
+	var newStaff Staff
+
+	if err := c.BindJSON(&newStaff); err != nil {
+		return
+	}
+
+	var query = "INSERT INTO staff (Full_Name, Email, Position_ID) VALUES (?, ?, ?)"
+
+	ins, err := db.Query(query, newStaff.FullName, newStaff.Email, newStaff.PositionID)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "staff creation failed."})
+	} else {
+		c.IndentedJSON(http.StatusCreated, newStaff)
+	}
+
+	defer ins.Close()
+}
+
+func putStaff(c *gin.Context) {
+	var updatedStaff Staff
+	updatedStaff.PositionID = -1
+
+	if err := c.BindJSON(&updatedStaff); err != nil {
+		return
+	}
+
+	updated := 0
+
+	id := c.Param("id")
+
+	var query = "UPDATE staff SET "
+
+	if updatedStaff.FullName != "" {
+		query += "Full_Name = '" + updatedStaff.FullName + "'"
+
+		updated++
+		fmt.Println("updated name")
+	}
+
+	if updatedStaff.Email != "" {
+		if updated > 0 {
+			query += ", Email = '" + updatedStaff.Email + "'"
+		} else {
+			query += "Email = '" + updatedStaff.Email + "'"
+		}
+
+		updated++
+		fmt.Println("updated email")
+	}
+
+	if updatedStaff.PositionID != -1 {
+		if updated > 0 {
+			query += ", Position_ID = " + strconv.Itoa(updatedStaff.PositionID)
+		} else {
+			query += "Position_ID = " + strconv.Itoa(updatedStaff.PositionID)
+		}
+
+		updated++
+		fmt.Println("updated position")
+	}
+
+	query += " WHERE Staff_ID = " + id
+
+	res, err := db.Query(query)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		return
+	}
+
+	defer res.Close()
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "staff " + id + " updated."})
+}
+
+func deleteStaff(c *gin.Context) {
+	id := c.Param("id")
+
+	var query = "DELETE FROM staff WHERE Staff_ID = ?"
+
+	res, err := db.Query(query, id)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		return
+	}
+
+	defer res.Close()
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "staff " + id + " deleted."})
+}
+
+func getLocations(c *gin.Context) {
 	locations := []Location{}
 	var query = "SELECT Location_ID, Location_Name, Address, Floor FROM Location"
 
@@ -318,4 +448,119 @@ func getLocation(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, locations)
 	}
+}
+
+func getLocationByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var query = "SELECT Location_ID, Location_Name, Address, Floor FROM Location WHERE Location_ID = ?"
+
+	res, err := db.Query(query, id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	}
+
+	defer res.Close()
+
+	if res.Next() {
+		var l Location
+
+		if err := res.Scan(&l.LocationID, &l.LocationName, &l.Address, &l.Floor); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+			return
+		}
+
+		c.IndentedJSON(http.StatusOK, l)
+	} else {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "location not found"})
+	}
+}
+
+func postLocation(c *gin.Context) {
+	var newLocation Location
+
+	if err := c.BindJSON(&newLocation); err != nil {
+		return
+	}
+
+	var query = "INSERT INTO location (Location_Name, Address, Floor) VALUES (?, ?, ?)"
+
+	ins, err := db.Query(query, newLocation.LocationName, newLocation.Address, newLocation.Floor)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "location creation failed."})
+	} else {
+		c.IndentedJSON(http.StatusCreated, newLocation)
+	}
+
+	defer ins.Close()
+}
+
+func putLocation(c *gin.Context) {
+	var updatedLocation Location
+
+	if err := c.BindJSON(&updatedLocation); err != nil {
+		return
+	}
+
+	updated := 0
+
+	id := c.Param("id")
+
+	var query = "UPDATE location SET "
+
+	if updatedLocation.LocationName != "" {
+		query += "Location_Name = '" + updatedLocation.LocationName + "'"
+
+		updated++
+	}
+
+	if updatedLocation.Address != "" {
+		if updated > 0 {
+			query += ", Address = '" + updatedLocation.Address + "'"
+		} else {
+			query += "Address = '" + updatedLocation.Address + "'"
+		}
+
+		updated++
+	}
+
+	if updatedLocation.Floor != "" {
+		if updated > 0 {
+			query += ", Floor = '" + updatedLocation.Floor + "'"
+		} else {
+			query += "Floor = '" + updatedLocation.Floor + "'"
+		}
+
+		updated++
+	}
+
+	query += " WHERE Location_ID = " + id
+
+	res, err := db.Query(query)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	} else {
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "location " + id + " updated."})
+	}
+
+	defer res.Close()
+}
+
+func deleteLocation(c *gin.Context) {
+	id := c.Param("id")
+
+	var query = "DELETE FROM location WHERE Location_ID = ?"
+
+	res, err := db.Query(query, id)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	}
+
+	defer res.Close()
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "location " + id + " deleted."})
 }
